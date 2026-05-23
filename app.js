@@ -8,11 +8,38 @@ const RATE = {
 };
 
 // ─────────────────────────────────────────────
-//  Firebase Config
-//  แก้ DB_URL ถ้าเปลี่ยน project
+//  Firebase Config — อ่านจาก localStorage
+//  แต่ละคน setup Firebase URL ของตัวเองครั้งแรก
 // ─────────────────────────────────────────────
-const DB_URL = 'https://kick-lucky-block-default-rtdb.asia-southeast1.firebasedatabase.app';
-const DB_REF = `${DB_URL}/klb.json`;
+const SETUP_KEY = 'klb_firebase_url';
+
+function getDbRef() {
+  const url = localStorage.getItem(SETUP_KEY);
+  return url ? `${url}/klb.json` : null;
+}
+
+function saveSetup() {
+  const url = document.getElementById('setup-url').value.trim().replace(/\/$/, '');
+  if (!url.startsWith('https://')) {
+    alert('URL ไม่ถูกต้อง ต้องขึ้นต้นด้วย https://');
+    return;
+  }
+  localStorage.setItem(SETUP_KEY, url);
+  hideSetup();
+  loadQueue().then(render);
+}
+
+function showSetup() {
+  const url = localStorage.getItem(SETUP_KEY) || '';
+  document.getElementById('setup-url').value = url;
+  document.getElementById('setup-screen').style.display = 'flex';
+  document.getElementById('main-app').style.display = 'none';
+}
+
+function hideSetup() {
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('main-app').style.display = 'block';
+}
 
 // สีอวตาร (bg, text)
 const AVATAR_COLORS = [
@@ -38,8 +65,10 @@ let toastTimer  = null;
 //  Firebase sync
 // ─────────────────────────────────────────────
 async function saveQueue() {
+  const ref = getDbRef();
+  if (!ref) return;
   try {
-    await fetch(DB_REF, {
+    await fetch(ref, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ queue, done, totalKicks }),
@@ -48,8 +77,10 @@ async function saveQueue() {
 }
 
 async function loadQueue() {
+  const ref = getDbRef();
+  if (!ref) return;
   try {
-    const res = await fetch(DB_REF);
+    const res = await fetch(ref);
     const d   = await res.json();
     if (d) {
       queue      = d.queue      || [];
@@ -63,10 +94,12 @@ async function loadQueue() {
 let lastSnapshot = '';
 
 setInterval(async () => {
+  const ref = getDbRef();
+  if (!ref) return;
   try {
-    const res = await fetch(DB_REF);
+    const res = await fetch(ref);
     const raw = await res.text();
-    if (raw === lastSnapshot) return; // ไม่เปลี่ยน → ไม่ render
+    if (raw === lastSnapshot) return;
     lastSnapshot = raw;
     const d = JSON.parse(raw);
     if (d) {
@@ -299,4 +332,9 @@ document.getElementById('add-amount').addEventListener('keydown', e => {
 // ─────────────────────────────────────────────
 //  Init
 // ─────────────────────────────────────────────
-loadQueue().then(render);
+if (localStorage.getItem(SETUP_KEY)) {
+  hideSetup();
+  loadQueue().then(render);
+} else {
+  showSetup();
+}
