@@ -152,13 +152,63 @@ async function addToQueue(name, kicks, source) {
 
 async function useKick(idx) {
   if (idx >= queue.length) return;
+  const name = queue[idx].name;
+
+  // เปิด popup ถามผลการเตะ
+  const result = await promptResult(name);
+  if (result === null) return; // กด cancel
+
   queue[idx].kicks--;
+  // บันทึกผลลงใน results ของคนนี้
+  if (!queue[idx].results) queue[idx].results = [];
+  if (result) queue[idx].results.push(result);
+
   if (queue[idx].kicks <= 0) {
-    done.push({ name: queue[idx].name, total: queue[idx].total });
+    done.push({
+      name: queue[idx].name,
+      total: queue[idx].total,
+      results: queue[idx].results || [],
+    });
     queue.splice(idx, 1);
   }
   render();
   await saveQueue();
+}
+
+// popup รับผลการเตะ
+function promptResult(name) {
+  return new Promise(resolve => {
+    const overlay = document.getElementById('result-overlay');
+    const input   = document.getElementById('result-input');
+    const label   = document.getElementById('result-label');
+    label.textContent = `🍀 ${name} — เตะได้อะไร?`;
+    input.value = '';
+    overlay.style.display = 'flex';
+    setTimeout(() => input.focus(), 50);
+
+    function confirm() {
+      overlay.style.display = 'none';
+      resolve(input.value.trim());
+      cleanup();
+    }
+    function cancel() {
+      overlay.style.display = 'none';
+      resolve(null);
+      cleanup();
+    }
+    function onKey(e) {
+      if (e.key === 'Enter') confirm();
+      if (e.key === 'Escape') cancel();
+    }
+
+    document.getElementById('result-confirm').onclick = confirm;
+    document.getElementById('result-cancel').onclick  = cancel;
+    input.addEventListener('keydown', onKey);
+
+    function cleanup() {
+      input.removeEventListener('keydown', onKey);
+    }
+  });
 }
 
 async function removeFromQueue(idx) {
@@ -254,13 +304,30 @@ function renderDone() {
   ds.style.display = 'block';
   dl.innerHTML = done.slice().reverse().map(d => {
     const [bg, fg] = colorFor(d.name);
+    const results  = d.results || [];
+    const resultHtml = results.length > 0
+      ? `<div style="font-size:12px;color:var(--text2);margin-top:4px;font-family:'IBM Plex Mono',monospace">
+           ${results.map((r,i) => `<span style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:1px 8px;margin:2px;display:inline-block">เตะ${i+1}: ${r}</span>`).join('')}
+         </div>`
+      : '';
+    const summary = results.length > 0
+      ? `<span class="done-tag" style="cursor:pointer" onclick="copyResults('${d.name}', ${JSON.stringify(results)})" title="ก็อปสรุป">📋 ${results.length} ผล</span>`
+      : `<span class="done-tag">เตะ ${d.total} ครั้ง</span>`;
     return `
-      <div class="done-item">
-        <div class="avatar" style="width:28px;height:28px;font-size:11px;background:${bg};color:${fg}">${initials(d.name)}</div>
-        <span class="done-name">${d.name}</span>
-        <span class="done-tag">เตะทั้งหมด ${d.total} ครั้ง</span>
+      <div class="done-item" style="flex-direction:column;align-items:flex-start;opacity:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:8px;width:100%">
+          <div class="avatar" style="width:28px;height:28px;font-size:11px;background:${bg};color:${fg};flex-shrink:0">${initials(d.name)}</div>
+          <span class="done-name" style="flex:1;opacity:1">${d.name}</span>
+          ${summary}
+        </div>
+        ${resultHtml}
       </div>`;
   }).join('');
+}
+
+function copyResults(name, results) {
+  const text = `${name}: ${results.join(', ')}`;
+  navigator.clipboard.writeText(text).then(() => showToast('ก็อปแล้ว: ' + text, true));
 }
 
 // ─────────────────────────────────────────────
