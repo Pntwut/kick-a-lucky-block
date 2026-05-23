@@ -6,15 +6,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;700&display=swap" rel="stylesheet">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-
-/* พื้นหลังโปร่งใส — OBS จะตัด bg สีเขียวออกเอง */
 body {
   background: transparent;
   font-family: 'Kanit', sans-serif;
   padding: 12px;
   width: 280px;
 }
-
 .header {
   font-size: 13px;
   font-weight: 700;
@@ -32,9 +29,7 @@ body {
   background: #22c55e;
   box-shadow: 0 0 6px #22c55e;
 }
-
 .queue { display: flex; flex-direction: column; gap: 5px; }
-
 .q-item {
   display: flex;
   align-items: center;
@@ -49,21 +44,12 @@ body {
   border-left-color: #22c55e;
   background: rgba(0,0,0,0.75);
 }
-
 @keyframes fadeIn {
   from { opacity: 0; transform: translateX(-8px); }
   to   { opacity: 1; transform: translateX(0); }
 }
-
-.rank {
-  font-size: 11px;
-  color: rgba(255,255,255,0.35);
-  width: 16px;
-  text-align: center;
-  flex-shrink: 0;
-}
+.rank { font-size: 11px; color: rgba(255,255,255,0.35); width: 16px; text-align: center; flex-shrink: 0; }
 .rank.first { color: #22c55e; font-weight: 700; }
-
 .avatar {
   width: 28px; height: 28px;
   border-radius: 50%;
@@ -71,33 +57,14 @@ body {
   font-size: 11px; font-weight: 700;
   flex-shrink: 0;
 }
-
-.name {
-  font-size: 14px;
-  font-weight: 500;
-  color: #fff;
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.name.first { color: #fff; font-weight: 700; }
-
+.name { font-size: 14px; font-weight: 500; color: #fff; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.name.first { font-weight: 700; }
 .kicks {
-  font-size: 12px;
-  font-weight: 700;
-  color: #22c55e;
+  font-size: 12px; font-weight: 700; color: #22c55e;
   background: rgba(34,197,94,0.15);
-  border-radius: 20px;
-  padding: 1px 8px;
-  flex-shrink: 0;
+  border-radius: 20px; padding: 1px 8px; flex-shrink: 0;
 }
-
-.empty {
-  font-size: 12px;
-  color: rgba(255,255,255,0.3);
-  padding: 8px 0;
-}
+.empty { font-size: 12px; color: rgba(255,255,255,0.3); padding: 8px 0; }
 </style>
 </head>
 <body>
@@ -106,13 +73,14 @@ body {
   <div class="header-dot"></div>
   คิวเตะ Lucky Block
 </div>
-
 <div class="queue" id="queue-list">
   <div class="empty">ยังไม่มีคิว...</div>
 </div>
 
 <script>
-const STORAGE_KEY = 'klb_queue';
+const DB_URL = 'https://kick-lucky-block-default-rtdb.asia-southeast1.firebasedatabase.app';
+const DB_REF = `${DB_URL}/klb.json`;
+
 const AVATAR_COLORS = [
   ['rgba(34,197,94,0.3)',  '#22c55e'],
   ['rgba(59,130,246,0.3)', '#60a5fa'],
@@ -127,27 +95,24 @@ function colorFor(name) {
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffff;
   return AVATAR_COLORS[h % AVATAR_COLORS.length];
 }
-
 function initials(name) { return name.slice(0, 2).toUpperCase(); }
 
-function render() {
+async function render() {
   let queue = [];
   try {
-    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    const res = await fetch(DB_REF);
+    const d   = await res.json();
     if (d) queue = d.queue || [];
   } catch (_) {}
 
   const el = document.getElementById('queue-list');
-
   if (queue.length === 0) {
     el.innerHTML = '<div class="empty">ยังไม่มีคิว...</div>';
     return;
   }
-
-  // แสดงสูงสุด 8 คน
   el.innerHTML = queue.slice(0, 8).map((q, i) => {
     const [bg, fg] = colorFor(q.name);
-    const isFirst = i === 0;
+    const isFirst  = i === 0;
     return `<div class="q-item${isFirst ? ' first' : ''}">
       <div class="rank${isFirst ? ' first' : ''}">${isFirst ? '▶' : i + 1}</div>
       <div class="avatar" style="background:${bg};color:${fg}">${initials(q.name)}</div>
@@ -157,12 +122,8 @@ function render() {
   }).join('');
 }
 
-// อัปเดตทุก 500ms เมื่อหน้าจัดการมีการเปลี่ยนแปลง
 render();
-setInterval(render, 500);
-
-// รับ event จาก storage ทันทีถ้าอยู่ tab เดียวกัน
-window.addEventListener('storage', render);
+setInterval(render, 2000);
 </script>
 </body>
 </html>
