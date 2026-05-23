@@ -147,6 +147,7 @@ async function addToQueue(name, kicks, source) {
   totalKicks += kicks;
   render();
   await saveQueue();
+  playNotif();
   showToast(`+${kicks} เตะ → ${name}`, true);
 }
 
@@ -264,6 +265,41 @@ function render() {
   renderDone();
 }
 
+// ใช้ทุกเตะของคนแรกรวดเดียว — พิมพ์ผลทีละตัว
+async function useAllKicks(idx) {
+  if (idx >= queue.length) return;
+  const q       = queue[idx];
+  const name    = q.name;
+  const total   = q.kicks;
+  const results = q.results || [];
+
+  for (let i = 0; i < total; i++) {
+    const kickNo = results.length + 1;
+    const label  = document.getElementById('result-label');
+    const input  = document.getElementById('result-input');
+    label.textContent = `🍀 ${name} — เตะที่ ${kickNo}/${total} ได้อะไร?`;
+
+    const result = await promptResult(name);
+    if (result === null) break; // กด Esc หยุดได้เลย
+
+    q.kicks--;
+    results.push(result || '-');
+    q.results = results;
+
+    if (q.kicks <= 0) {
+      done.push({ name, total: q.total, results });
+      queue.splice(idx, 1);
+      render();
+      await saveQueue();
+      // แสดงสรุปทันทีหลังเสร็จ
+      showToast(`✓ ${name} เสร็จแล้ว — ${results.join(', ')}`, true);
+      return;
+    }
+    render();
+    await saveQueue();
+  }
+}
+
 function renderQueue() {
   const ql = document.getElementById('queue-list');
   if (queue.length === 0) {
@@ -290,7 +326,11 @@ function renderQueue() {
         <div class="kick-dots">${dotsHtml}${extra}</div>
         <div class="kick-count">${q.kicks} เตะ</div>
         <div class="q-actions">
-          <button class="btn-sm${isFirst ? ' btn-green' : ''}" onclick="useKick(${i})">ใช้ 1 เตะ</button>
+          ${isFirst
+            ? `<button class="btn-sm btn-green" onclick="useAllKicks(${i})" title="เตะครบรอบทีเดียว">⚡ เตะครบรอบ</button>
+               <button class="btn-sm" onclick="useKick(${i})" title="เตะทีละครั้ง">1 เตะ</button>`
+            : `<button class="btn-sm" onclick="useKick(${i})">ใช้ 1 เตะ</button>`
+          }
           <button class="btn-sm btn-danger" onclick="removeFromQueue(${i})" title="ลบออกจากคิว">✕</button>
         </div>
       </div>`;
@@ -395,8 +435,24 @@ function handleEvent(d) {
 }
 
 // ─────────────────────────────────────────────
-//  Keyboard shortcuts
+//  เสียงแจ้งเตือนเมื่อมีคนเข้าคิวใหม่
 // ─────────────────────────────────────────────
+function playNotif() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o1  = ctx.createOscillator();
+    const o2  = ctx.createOscillator();
+    const g   = ctx.createGain();
+    o1.connect(g); o2.connect(g); g.connect(ctx.destination);
+    o1.frequency.value = 880; o1.type = 'sine';
+    o2.frequency.value = 1320; o2.type = 'sine';
+    g.gain.setValueAtTime(0.15, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    o1.start(); o2.start();
+    o1.stop(ctx.currentTime + 0.4);
+    o2.stop(ctx.currentTime + 0.4);
+  } catch (_) {}
+}
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') return;
   if (e.key === 'Enter' && queue.length > 0) useKick(0);
