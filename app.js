@@ -18,6 +18,15 @@ function getDbRef() {
   return url ? `${url}/klb.json` : null;
 }
 
+function copyOverlayLink() {
+  const url = location.href.replace('index.html', '').replace(/\/$/, '') + '/overlay.html';
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = '✓ ก็อปแล้ว!';
+    setTimeout(() => { btn.textContent = '📋 ก็อปลิ้งค์คิว'; }, 2000);
+  });
+}
+
 function saveSetup() {
   const url = document.getElementById('setup-url').value.trim().replace(/\/$/, '');
   if (!url.startsWith('https://')) {
