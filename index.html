@@ -9,9 +9,39 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
- 
-<div class="app">
- 
+
+<!-- ─── Setup Screen ─── -->
+<div id="setup-screen" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:999;align-items:center;justify-content:center">
+  <div style="width:100%;max-width:460px;padding:24px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px">
+      <div style="font-size:32px">🍀</div>
+      <div>
+        <div style="font-size:20px;font-weight:700">คิวเตะ Lucky Block</div>
+        <div style="font-size:12px;color:var(--text3);font-family:'IBM Plex Mono',monospace">ตั้งค่าครั้งแรก</div>
+      </div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:8px;font-weight:500">Firebase Realtime Database URL</div>
+      <input id="setup-url" type="text"
+        placeholder="https://your-project-default-rtdb.firebasedatabase.app"
+        style="width:100%;margin-bottom:10px">
+      <div style="font-size:11px;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-bottom:20px;line-height:1.8">
+        หา URL ได้ที่ Firebase Console → Realtime Database<br>
+        แต่ละคนใช้ Firebase ของตัวเองแยกกัน ไม่ปนกัน ✓
+      </div>
+      <button class="btn-primary" style="width:100%;height:42px;font-size:15px" onclick="saveSetup()">
+        บันทึกและเริ่มใช้งาน
+      </button>
+    </div>
+    <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:12px;font-family:'IBM Plex Mono',monospace">
+      URL จะถูกเก็บในเครื่องนี้เท่านั้น ไม่ได้อัพโหลดไปที่ไหน
+    </div>
+  </div>
+</div>
+
+<!-- ─── Main App ─── -->
+<div class="app" id="main-app" style="display:none">
+
   <!-- ─── Header ─── -->
   <div class="header">
     <div class="logo">
@@ -22,11 +52,12 @@
       </div>
     </div>
     <div class="header-actions">
+      <button class="btn-sm" onclick="showSetup()">⚙ Firebase</button>
       <button class="btn-sm" onclick="clearDone()">ล้างประวัติ</button>
       <button class="btn-sm" onclick="resetAll()">รีเซ็ต</button>
     </div>
   </div>
- 
+
   <!-- ─── Stats ─── -->
   <div class="stats">
     <div class="stat">
@@ -42,7 +73,7 @@
       <div class="stat-val blue" id="s-members">0</div>
     </div>
   </div>
- 
+
   <!-- ─── Tikfinity Connection ─── -->
   <div class="conn-panel">
     <div class="conn-left">
@@ -59,13 +90,13 @@
       <button id="ws-btn" class="btn-sm btn-connect" onclick="toggleWS()">เชื่อม</button>
     </div>
   </div>
- 
+
   <!-- ─── Rate Info ─── -->
   <div class="rates">
     <span class="rate-pill">💵 1 บาท = 1 เตะ</span>
     <span class="rate-pill">🪙 5 เหรียญ = 1 เตะ</span>
   </div>
- 
+
   <!-- ─── Manual Add ─── -->
   <div class="add-panel">
     <div class="add-panel-title">เพิ่มเอง / manual</div>
@@ -79,7 +110,7 @@
       <button class="btn-primary" onclick="addManual()">+ เพิ่ม</button>
     </div>
   </div>
- 
+
   <!-- ─── Queue ─── -->
   <div class="section-header">
     <div class="section-title">
@@ -90,7 +121,7 @@
   <div class="queue" id="queue-list">
     <div class="empty">ยังไม่มีคิว — รอ donation หรือเพิ่มเอง</div>
   </div>
- 
+
   <!-- ─── Done ─── -->
   <div id="done-section" style="display:none">
     <div class="section-header" style="margin-top:8px">
@@ -102,13 +133,12 @@
     </div>
     <div id="done-list"></div>
   </div>
- 
+
 </div>
- 
+
 <!-- ─── Toast ─── -->
 <div class="toast" id="toast"></div>
- 
+
 <script src="app.js"></script>
 </body>
 </html>
- 
