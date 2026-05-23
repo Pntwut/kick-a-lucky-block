@@ -115,11 +115,20 @@ if (!dbRef) {
       el.innerHTML = queue.slice(0, 8).map((q, i) => {
         const [bg, fg] = colorFor(q.name);
         const isFirst  = i === 0;
-        return `<div class="q-item${isFirst ? ' first' : ''}">
-          <div class="rank${isFirst ? ' first' : ''}">${isFirst ? '▶' : i + 1}</div>
-          <div class="avatar" style="background:${bg};color:${fg}">${initials(q.name)}</div>
-          <div class="name${isFirst ? ' first' : ''}">${q.name}</div>
-          <div class="kicks">${q.kicks} เตะ</div>
+        const results  = q.results || [];
+        const resultsHtml = results.length > 0
+          ? `<div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;padding-left:44px">
+               ${results.map((r,j) => `<span style="margin-right:6px">${j+1}.${r}</span>`).join('')}
+             </div>`
+          : '';
+        return `<div style="margin-bottom:3px">
+          <div class="q-item${isFirst ? ' first' : ''}">
+            <div class="rank${isFirst ? ' first' : ''}">${isFirst ? '▶' : i + 1}</div>
+            <div class="avatar" style="background:${bg};color:${fg}">${initials(q.name)}</div>
+            <div class="name${isFirst ? ' first' : ''}">${q.name}</div>
+            <div class="kicks">${q.kicks} เตะ</div>
+          </div>
+          ${resultsHtml}
         </div>`;
       }).join('');
     } catch (_) {}
