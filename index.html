@@ -137,6 +137,19 @@
 
 </div>
 
+<!-- ─── Result Popup ─── -->
+<div id="result-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:998;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:24px;width:100%;max-width:380px;margin:16px">
+    <div id="result-label" style="font-size:15px;font-weight:600;margin-bottom:16px;color:var(--green)">เตะได้อะไร?</div>
+    <input id="result-input" type="text" placeholder="เช่น ช้าง, หมู, ไดโนเสาร์..." style="width:100%;margin-bottom:12px">
+    <div style="display:flex;gap:8px">
+      <button id="result-confirm" class="btn-primary" style="flex:1;height:40px">บันทึก ✓</button>
+      <button id="result-cancel" class="btn-sm" style="height:40px;padding:0 16px">ข้ามไป</button>
+    </div>
+    <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:10px;font-family:'IBM Plex Mono',monospace">Enter = บันทึก · Esc = ข้าม</div>
+  </div>
+</div>
+
 <!-- ─── Toast ─── -->
 <div class="toast" id="toast"></div>
 
