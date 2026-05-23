@@ -1,113 +1,169 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>คิวเตะ Lucky Block</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>Queue Overlay</title>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+ 
+/* พื้นหลังโปร่งใส — OBS จะตัด bg สีเขียวออกเอง */
+body {
+  background: transparent;
+  font-family: 'Kanit', sans-serif;
+  padding: 12px;
+  width: 280px;
+}
+ 
+.header {
+  font-size: 13px;
+  font-weight: 700;
+  color: #22c55e;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.header-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 6px #22c55e;
+}
+ 
+.queue { display: flex; flex-direction: column; gap: 5px; }
+ 
+.q-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0,0,0,0.65);
+  border-radius: 8px;
+  padding: 7px 10px;
+  border-left: 3px solid transparent;
+  animation: fadeIn .3s ease;
+}
+.q-item.first {
+  border-left-color: #22c55e;
+  background: rgba(0,0,0,0.75);
+}
+ 
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+ 
+.rank {
+  font-size: 11px;
+  color: rgba(255,255,255,0.35);
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.rank.first { color: #22c55e; font-weight: 700; }
+ 
+.avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+  flex-shrink: 0;
+}
+ 
+.name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.name.first { color: #fff; font-weight: 700; }
+ 
+.kicks {
+  font-size: 12px;
+  font-weight: 700;
+  color: #22c55e;
+  background: rgba(34,197,94,0.15);
+  border-radius: 20px;
+  padding: 1px 8px;
+  flex-shrink: 0;
+}
+ 
+.empty {
+  font-size: 12px;
+  color: rgba(255,255,255,0.3);
+  padding: 8px 0;
+}
+</style>
 </head>
 <body>
-
-<div class="app">
-
-  <!-- ─── Header ─── -->
-  <div class="header">
-    <div class="logo">
-      <div class="logo-icon">🍀</div>
-      <div>
-        <div class="logo-text">คิวเตะ Lucky Block</div>
-        <div class="logo-sub">TikTok Live Queue Manager</div>
-      </div>
-    </div>
-    <div class="header-actions">
-      <button class="btn-sm" onclick="clearDone()">ล้างประวัติ</button>
-      <button class="btn-sm" onclick="resetAll()">รีเซ็ต</button>
-    </div>
-  </div>
-
-  <!-- ─── Stats ─── -->
-  <div class="stats">
-    <div class="stat">
-      <div class="stat-label">รอในคิว</div>
-      <div class="stat-val green" id="s-queue">0</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">เตะวันนี้</div>
-      <div class="stat-val yellow" id="s-total">0</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">สมาชิก</div>
-      <div class="stat-val blue" id="s-members">0</div>
-    </div>
-  </div>
-
-  <!-- ─── Tikfinity Connection ─── -->
-  <div class="conn-panel">
-    <div class="conn-left">
-      <div class="conn-title">Tikfinity WebSocket</div>
-      <div class="conn-url">ws://localhost:<span id="port-disp">8765</span></div>
-    </div>
-    <div class="conn-right">
-      <div class="port-group">
-        <span class="port-label">port:</span>
-        <input class="port-input" type="number" id="port-input" value="8765" min="1000" max="65535">
-      </div>
-      <div class="status-dot" id="conn-dot"></div>
-      <span class="status-label" id="conn-label">ยังไม่เชื่อม</span>
-      <button id="ws-btn" class="btn-sm btn-connect" onclick="toggleWS()">เชื่อม</button>
-    </div>
-  </div>
-
-  <!-- ─── Rate Info ─── -->
-  <div class="rates">
-    <span class="rate-pill">💵 1 บาท = 1 เตะ</span>
-    <span class="rate-pill">🪙 5 เหรียญ = 1 เตะ</span>
-  </div>
-
-  <!-- ─── Manual Add ─── -->
-  <div class="add-panel">
-    <div class="add-panel-title">เพิ่มเอง / manual</div>
-    <div class="add-row">
-      <input class="input-name" id="add-name" type="text" placeholder="ชื่อผู้ชม">
-      <input class="input-amount" id="add-amount" type="number" min="1" placeholder="จำนวน">
-      <select id="add-type">
-        <option value="baht">💵 บาท</option>
-        <option value="coin">🪙 เหรียญ</option>
-      </select>
-      <button class="btn-primary" onclick="addManual()">+ เพิ่ม</button>
-    </div>
-  </div>
-
-  <!-- ─── Queue ─── -->
-  <div class="section-header">
-    <div class="section-title">
-      คิวรอเตะ
-      <span class="section-count" id="queue-count">0</span>
-    </div>
-  </div>
-  <div class="queue" id="queue-list">
-    <div class="empty">ยังไม่มีคิว — รอ donation หรือเพิ่มเอง</div>
-  </div>
-
-  <!-- ─── Done ─── -->
-  <div id="done-section" style="display:none">
-    <div class="section-header" style="margin-top:8px">
-      <div class="section-title">
-        เตะครบแล้ว
-        <span class="section-count" id="done-count">0</span>
-      </div>
-      <button class="btn-sm" onclick="clearDone()">ล้าง</button>
-    </div>
-    <div id="done-list"></div>
-  </div>
-
+ 
+<div class="header">
+  <div class="header-dot"></div>
+  คิวเตะ Lucky Block
 </div>
-
-<!-- ─── Toast ─── -->
-<div class="toast" id="toast"></div>
-
-<script src="app.js"></script>
+ 
+<div class="queue" id="queue-list">
+  <div class="empty">ยังไม่มีคิว...</div>
+</div>
+ 
+<script>
+const STORAGE_KEY = 'klb_queue';
+const AVATAR_COLORS = [
+  ['rgba(34,197,94,0.3)',  '#22c55e'],
+  ['rgba(59,130,246,0.3)', '#60a5fa'],
+  ['rgba(234,179,8,0.3)',  '#eab308'],
+  ['rgba(168,85,247,0.3)', '#c084fc'],
+  ['rgba(249,115,22,0.3)', '#fb923c'],
+  ['rgba(236,72,153,0.3)', '#f472b6'],
+];
+ 
+function colorFor(name) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffff;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
+ 
+function initials(name) { return name.slice(0, 2).toUpperCase(); }
+ 
+function render() {
+  let queue = [];
+  try {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (d) queue = d.queue || [];
+  } catch (_) {}
+ 
+  const el = document.getElementById('queue-list');
+ 
+  if (queue.length === 0) {
+    el.innerHTML = '<div class="empty">ยังไม่มีคิว...</div>';
+    return;
+  }
+ 
+  // แสดงสูงสุด 8 คน
+  el.innerHTML = queue.slice(0, 8).map((q, i) => {
+    const [bg, fg] = colorFor(q.name);
+    const isFirst = i === 0;
+    return `<div class="q-item${isFirst ? ' first' : ''}">
+      <div class="rank${isFirst ? ' first' : ''}">${isFirst ? '▶' : i + 1}</div>
+      <div class="avatar" style="background:${bg};color:${fg}">${initials(q.name)}</div>
+      <div class="name${isFirst ? ' first' : ''}">${q.name}</div>
+      <div class="kicks">${q.kicks} เตะ</div>
+    </div>`;
+  }).join('');
+}
+ 
+// อัปเดตทุก 500ms เมื่อหน้าจัดการมีการเปลี่ยนแปลง
+render();
+setInterval(render, 500);
+ 
+// รับ event จาก storage ทันทีถ้าอยู่ tab เดียวกัน
+window.addEventListener('storage', render);
+</script>
 </body>
 </html>
+ 
