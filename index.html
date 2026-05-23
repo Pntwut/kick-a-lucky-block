@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>คิวเตะ Lucky Block</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ─── Header ─── -->
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">🍀</div>
+      <div>
+        <div class="logo-text">คิวเตะ Lucky Block</div>
+        <div class="logo-sub">TikTok Live Queue Manager</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-sm" onclick="clearDone()">ล้างประวัติ</button>
+      <button class="btn-sm" onclick="resetAll()">รีเซ็ต</button>
+    </div>
+  </div>
+
+  <!-- ─── Stats ─── -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-label">รอในคิว</div>
+      <div class="stat-val green" id="s-queue">0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">เตะวันนี้</div>
+      <div class="stat-val yellow" id="s-total">0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">สมาชิก</div>
+      <div class="stat-val blue" id="s-members">0</div>
+    </div>
+  </div>
+
+  <!-- ─── Tikfinity Connection ─── -->
+  <div class="conn-panel">
+    <div class="conn-left">
+      <div class="conn-title">Tikfinity WebSocket</div>
+      <div class="conn-url">ws://localhost:<span id="port-disp">8765</span></div>
+    </div>
+    <div class="conn-right">
+      <div class="port-group">
+        <span class="port-label">port:</span>
+        <input class="port-input" type="number" id="port-input" value="8765" min="1000" max="65535">
+      </div>
+      <div class="status-dot" id="conn-dot"></div>
+      <span class="status-label" id="conn-label">ยังไม่เชื่อม</span>
+      <button id="ws-btn" class="btn-sm btn-connect" onclick="toggleWS()">เชื่อม</button>
+    </div>
+  </div>
+
+  <!-- ─── Rate Info ─── -->
+  <div class="rates">
+    <span class="rate-pill">💵 1 บาท = 1 เตะ</span>
+    <span class="rate-pill">🪙 5 เหรียญ = 1 เตะ</span>
+  </div>
+
+  <!-- ─── Manual Add ─── -->
+  <div class="add-panel">
+    <div class="add-panel-title">เพิ่มเอง / manual</div>
+    <div class="add-row">
+      <input class="input-name" id="add-name" type="text" placeholder="ชื่อผู้ชม">
+      <input class="input-amount" id="add-amount" type="number" min="1" placeholder="จำนวน">
+      <select id="add-type">
+        <option value="baht">💵 บาท</option>
+        <option value="coin">🪙 เหรียญ</option>
+      </select>
+      <button class="btn-primary" onclick="addManual()">+ เพิ่ม</button>
+    </div>
+  </div>
+
+  <!-- ─── Queue ─── -->
+  <div class="section-header">
+    <div class="section-title">
+      คิวรอเตะ
+      <span class="section-count" id="queue-count">0</span>
+    </div>
+  </div>
+  <div class="queue" id="queue-list">
+    <div class="empty">ยังไม่มีคิว — รอ donation หรือเพิ่มเอง</div>
+  </div>
+
+  <!-- ─── Done ─── -->
+  <div id="done-section" style="display:none">
+    <div class="section-header" style="margin-top:8px">
+      <div class="section-title">
+        เตะครบแล้ว
+        <span class="section-count" id="done-count">0</span>
+      </div>
+      <button class="btn-sm" onclick="clearDone()">ล้าง</button>
+    </div>
+    <div id="done-list"></div>
+  </div>
+
+</div>
+
+<!-- ─── Toast ─── -->
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
