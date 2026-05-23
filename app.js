@@ -59,10 +59,23 @@ async function loadQueue() {
   } catch (_) {}
 }
 
-// polling ทุก 2 วินาที — ไม่ใช้ SSE เพื่อความง่าย
+// polling ทุก 2 วินาที — render เฉพาะเมื่อข้อมูลเปลี่ยน
+let lastSnapshot = '';
+
 setInterval(async () => {
-  await loadQueue();
-  render();
+  try {
+    const res = await fetch(DB_REF);
+    const raw = await res.text();
+    if (raw === lastSnapshot) return; // ไม่เปลี่ยน → ไม่ render
+    lastSnapshot = raw;
+    const d = JSON.parse(raw);
+    if (d) {
+      queue      = d.queue      || [];
+      done       = d.done       || [];
+      totalKicks = d.totalKicks || 0;
+    }
+    render();
+  } catch (_) {}
 }, 2000);
 
 // ─────────────────────────────────────────────
