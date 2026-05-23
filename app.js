@@ -19,7 +19,10 @@ function getDbRef() {
 }
 
 function copyOverlayLink() {
-  const url = location.href.replace('index.html', '').replace(/\/$/, '') + '/overlay.html';
+  const dbUrl = localStorage.getItem(SETUP_KEY);
+  if (!dbUrl) { showToast('กรุณา setup Firebase URL ก่อนครับ'); return; }
+  const base = location.href.replace('index.html', '').replace(/\/$/, '');
+  const url  = `${base}/overlay.html?db=${encodeURIComponent(dbUrl)}`;
   navigator.clipboard.writeText(url).then(() => {
     const btn = document.getElementById('copy-btn');
     btn.textContent = '✓ ก็อปแล้ว!';
