@@ -97,33 +97,36 @@ function colorFor(name) {
 }
 function initials(name) { return name.slice(0, 2).toUpperCase(); }
 
-async function render() {
-  let queue = [];
+let lastSnapshot = '';
+
+async function fetchAndRender() {
   try {
     const res = await fetch(DB_REF);
-    const d   = await res.json();
-    if (d) queue = d.queue || [];
+    const raw = await res.text();
+    if (raw === lastSnapshot) return; // ไม่เปลี่ยน → ไม่ render
+    lastSnapshot = raw;
+    const d = JSON.parse(raw);
+    const queue = d?.queue || [];
+    const el = document.getElementById('queue-list');
+    if (queue.length === 0) {
+      el.innerHTML = '<div class="empty">ยังไม่มีคิว...</div>';
+      return;
+    }
+    el.innerHTML = queue.slice(0, 8).map((q, i) => {
+      const [bg, fg] = colorFor(q.name);
+      const isFirst  = i === 0;
+      return `<div class="q-item${isFirst ? ' first' : ''}">
+        <div class="rank${isFirst ? ' first' : ''}">${isFirst ? '▶' : i + 1}</div>
+        <div class="avatar" style="background:${bg};color:${fg}">${initials(q.name)}</div>
+        <div class="name${isFirst ? ' first' : ''}">${q.name}</div>
+        <div class="kicks">${q.kicks} เตะ</div>
+      </div>`;
+    }).join('');
   } catch (_) {}
-
-  const el = document.getElementById('queue-list');
-  if (queue.length === 0) {
-    el.innerHTML = '<div class="empty">ยังไม่มีคิว...</div>';
-    return;
-  }
-  el.innerHTML = queue.slice(0, 8).map((q, i) => {
-    const [bg, fg] = colorFor(q.name);
-    const isFirst  = i === 0;
-    return `<div class="q-item${isFirst ? ' first' : ''}">
-      <div class="rank${isFirst ? ' first' : ''}">${isFirst ? '▶' : i + 1}</div>
-      <div class="avatar" style="background:${bg};color:${fg}">${initials(q.name)}</div>
-      <div class="name${isFirst ? ' first' : ''}">${q.name}</div>
-      <div class="kicks">${q.kicks} เตะ</div>
-    </div>`;
-  }).join('');
 }
 
-render();
-setInterval(render, 2000);
+fetchAndRender();
+setInterval(fetchAndRender, 2000);
 </script>
 </body>
 </html>
