@@ -20,6 +20,11 @@ body {
 .header-dot {
   width: 7px; height: 7px; border-radius: 50%;
   background: #22c55e; box-shadow: 0 0 6px #22c55e;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 .queue { display: flex; flex-direction: column; gap: 5px; }
 .q-item {
@@ -48,49 +53,24 @@ body {
   padding: 1px 8px; flex-shrink: 0;
 }
 .empty { font-size: 12px; color: rgba(255,255,255,0.3); padding: 8px 0; }
-
-/* setup prompt */
-.setup-box {
-  background: rgba(0,0,0,0.8); border-radius: 10px; padding: 14px;
-  border: 1px solid rgba(34,197,94,0.3);
-}
-.setup-box p { font-size: 12px; color: #94a3b8; margin-bottom: 8px; line-height: 1.6; }
-.setup-box input {
-  width: 100%; background: rgba(255,255,255,0.07);
-  border: 1px solid rgba(255,255,255,0.15); border-radius: 6px;
-  color: #fff; font-family: 'Kanit', sans-serif; font-size: 12px;
-  height: 32px; padding: 0 10px; margin-bottom: 8px; outline: none;
-}
-.setup-box button {
-  width: 100%; height: 32px; background: #22c55e; border: none;
-  border-radius: 6px; color: #0a0e1a; font-family: 'Kanit', sans-serif;
-  font-size: 13px; font-weight: 700; cursor: pointer;
+.error {
+  font-size: 11px; color: #ef4444; padding: 10px 12px;
+  background: rgba(239,68,68,0.1); border-radius: 8px;
+  border: 1px solid rgba(239,68,68,0.2); line-height: 1.6;
 }
 </style>
 </head>
 <body>
 
-<div id="setup-prompt" style="display:none">
-  <div class="setup-box">
-    <p>ใส่ Firebase URL ของคุณ<br>(เปิดจาก index.html ก่อนเพื่อ setup)</p>
-    <input id="url-input" type="text" placeholder="https://your-project-default-rtdb...">
-    <button onclick="saveUrl()">บันทึก</button>
-  </div>
+<div class="header">
+  <div class="header-dot"></div>
+  คิวเตะ Lucky Block
 </div>
-
-<div id="main-overlay" style="display:none">
-  <div class="header">
-    <div class="header-dot"></div>
-    คิวเตะ Lucky Block
-  </div>
-  <div class="queue" id="queue-list">
-    <div class="empty">ยังไม่มีคิว...</div>
-  </div>
+<div class="queue" id="queue-list">
+  <div class="empty">กำลังโหลด...</div>
 </div>
 
 <script>
-const SETUP_KEY = 'klb_firebase_url';
-
 const AVATAR_COLORS = [
   ['rgba(34,197,94,0.3)',  '#22c55e'],
   ['rgba(59,130,246,0.3)', '#60a5fa'],
@@ -107,60 +87,46 @@ function colorFor(name) {
 }
 function initials(name) { return name.slice(0, 2).toUpperCase(); }
 
-function getDbRef() {
-  const url = localStorage.getItem(SETUP_KEY);
-  return url ? `${url}/klb.json` : null;
-}
+// อ่าน Firebase URL จาก ?db=... parameter
+const params = new URLSearchParams(location.search);
+const dbUrl  = params.get('db');
+const dbRef  = dbUrl ? `${dbUrl}/klb.json` : null;
 
-function saveUrl() {
-  const url = document.getElementById('url-input').value.trim().replace(/\/$/, '');
-  if (!url.startsWith('https://')) { alert('URL ไม่ถูกต้อง'); return; }
-  localStorage.setItem(SETUP_KEY, url);
-  startOverlay();
-}
+const el = document.getElementById('queue-list');
 
-function startOverlay() {
-  document.getElementById('setup-prompt').style.display = 'none';
-  document.getElementById('main-overlay').style.display = 'block';
+if (!dbRef) {
+  el.innerHTML = '<div class="error">ไม่พบ Firebase URL<br>กด "ก็อปลิ้งค์คิว" จากหน้าหลักแล้ววางใหม่ครับ</div>';
+} else {
+  let lastSnapshot = '';
+
+  async function fetchAndRender() {
+    try {
+      const res = await fetch(dbRef);
+      const raw = await res.text();
+      if (raw === lastSnapshot) return;
+      lastSnapshot = raw;
+      const d     = JSON.parse(raw);
+      const queue = d?.queue || [];
+
+      if (queue.length === 0) {
+        el.innerHTML = '<div class="empty">ยังไม่มีคิว...</div>';
+        return;
+      }
+      el.innerHTML = queue.slice(0, 8).map((q, i) => {
+        const [bg, fg] = colorFor(q.name);
+        const isFirst  = i === 0;
+        return `<div class="q-item${isFirst ? ' first' : ''}">
+          <div class="rank${isFirst ? ' first' : ''}">${isFirst ? '▶' : i + 1}</div>
+          <div class="avatar" style="background:${bg};color:${fg}">${initials(q.name)}</div>
+          <div class="name${isFirst ? ' first' : ''}">${q.name}</div>
+          <div class="kicks">${q.kicks} เตะ</div>
+        </div>`;
+      }).join('');
+    } catch (_) {}
+  }
+
   fetchAndRender();
   setInterval(fetchAndRender, 2000);
-}
-
-let lastSnapshot = '';
-
-async function fetchAndRender() {
-  const ref = getDbRef();
-  if (!ref) return;
-  try {
-    const res = await fetch(ref);
-    const raw = await res.text();
-    if (raw === lastSnapshot) return;
-    lastSnapshot = raw;
-    const d = JSON.parse(raw);
-    const queue = d?.queue || [];
-    const el = document.getElementById('queue-list');
-    if (queue.length === 0) {
-      el.innerHTML = '<div class="empty">ยังไม่มีคิว...</div>';
-      return;
-    }
-    el.innerHTML = queue.slice(0, 8).map((q, i) => {
-      const [bg, fg] = colorFor(q.name);
-      const isFirst  = i === 0;
-      return `<div class="q-item${isFirst ? ' first' : ''}">
-        <div class="rank${isFirst ? ' first' : ''}">${isFirst ? '▶' : i + 1}</div>
-        <div class="avatar" style="background:${bg};color:${fg}">${initials(q.name)}</div>
-        <div class="name${isFirst ? ' first' : ''}">${q.name}</div>
-        <div class="kicks">${q.kicks} เตะ</div>
-      </div>`;
-    }).join('');
-  } catch (_) {}
-}
-
-// Init
-if (localStorage.getItem(SETUP_KEY)) {
-  startOverlay();
-} else {
-  document.getElementById('setup-prompt').style.display = 'block';
 }
 </script>
 </body>
